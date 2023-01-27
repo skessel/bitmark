@@ -8,8 +8,10 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 import com.nimbusds.jose.JOSEException;
 import com.ppm.bitmark.ApiClient;
+import com.ppm.bitmark.KeypairLoader;
 
 @SpringBootApplication
 public class DemoApplication {
@@ -18,8 +20,10 @@ public class DemoApplication {
     ConfigurableApplicationContext context = SpringApplication.run(DemoApplication.class, args);
 
     try {
+      KeypairLoader keyPairs = context.getBean(KeypairLoader.class);
       ApiClient client = context.getBean(ApiClient.class);
       client.hello();
+      client.publicKey(keyPairs.getClientKeyPair().getPublic());
     } catch (Exception e) {
       LoggerFactory.getLogger(DemoApplication.class).error("", e);
     }
@@ -27,7 +31,9 @@ public class DemoApplication {
 
   @Bean
   public RestTemplate restTemplate(RestTemplateBuilder builder) {
-    return builder.build();
+    return builder
+        .uriTemplateHandler(new DefaultUriBuilderFactory("https://wsip-test.bitmarck-daten.de"))
+        .build();
   }
 
 }

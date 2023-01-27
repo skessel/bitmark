@@ -1,7 +1,6 @@
 package com.ppm.bitmark;
 
 import static com.ppm.bitmark.KeyFingerprinter.sha256Fingerprint;
-import static com.ppm.bitmark.PublicKeyFingerprinter.sha256FingerprintString;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -57,20 +56,16 @@ class JwtGenerator implements JwtProvider {
 
   private JWTClaimsSet buildPayload() throws CryptoException {
     
-    String v1 = sha256Fingerprint(authKeyPair);
-    String v2 = sha256FingerprintString(authKeyPair.getPublic());
-    
-    logger.debug("Fingerprint V1 {}", v1);
-    logger.debug("Fingerprint V2 {}", v2);
-
     JWTClaimsSet payload = new JWTClaimsSet.Builder()
-        .issuer(sha256FingerprintString(authKeyPair.getPublic()))
-        .subject(sha256FingerprintString(clientKeyPair.getPublic()))
+        .issuer(sha256Fingerprint(authKeyPair))
+        .subject(sha256Fingerprint(clientKeyPair))
         .expirationTime(Date.from(LocalDateTime.now().plusHours(1l).toInstant(ZoneOffset.UTC)))
         .issueTime(new Date())
         .claim("scope", new String[] {"testscope", "decrypt"})
         .claim("ident", "<lanr/ik/bn>")
         .build();
+    
+    logger.debug("JWT Claims {}", payload);
 
     return payload;
   }
