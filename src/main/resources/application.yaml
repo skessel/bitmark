@@ -1,8 +1,8 @@
 keypairs:
   auth-key:
-    private-key: ${AUTH_KEY_PRIVATE}
-    public-key: ${AUTH_KEY_PUBLIC}
+    private-key: classpath:auth-key-pair/private.pem
+    public-key: classpath:auth-key-pair/public.pem
   client-key:
-    private-key: ${CLIENT_KEY_PRIVATE}
-    public-key: ${CLIENT_KEY_PUBLIC}
+    private-key: classpath:client-key-pair/private.pem
+    public-key: classpath:client-key-pair/public.pem
   

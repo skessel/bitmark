@@ -1,11 +1,14 @@
 package com.ppm.bitmark;
 
 import static com.ppm.bitmark.KeyFingerprinter.sha256Fingerprint;
+import static com.ppm.bitmark.PublicKeyFingerprinter.sha256FingerprintString;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 import org.bouncycastle.crypto.CryptoException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.nimbusds.jose.JOSEException;
@@ -20,10 +23,12 @@ import com.nimbusds.jwt.SignedJWT;
 @Component
 class JwtGenerator implements JwtProvider {
 
+  private final Logger logger;
   private final KeyPair authKeyPair;
   private final KeyPair clientKeyPair;
   
   public JwtGenerator(KeyPair authKeyPair, KeyPair clientKeyPair) {
+    this.logger = LoggerFactory.getLogger(getClass());
     this.authKeyPair = authKeyPair;
     this.clientKeyPair = clientKeyPair;
   }
@@ -37,7 +42,7 @@ class JwtGenerator implements JwtProvider {
 
     // Create RSA-signer with the private key
     JWSSigner signer = new RSASSASigner(authKeyPair.getPrivate());
-
+    
     JWSHeader header = new JWSHeader
         .Builder(new JWSHeader(JWSAlgorithm.RS512))
         .type(JOSEObjectType.JWT)
@@ -51,10 +56,16 @@ class JwtGenerator implements JwtProvider {
   }
 
   private JWTClaimsSet buildPayload() throws CryptoException {
+    
+    String v1 = sha256Fingerprint(authKeyPair);
+    String v2 = sha256FingerprintString(authKeyPair.getPublic());
+    
+    logger.debug("Fingerprint V1 {}", v1);
+    logger.debug("Fingerprint V2 {}", v2);
 
     JWTClaimsSet payload = new JWTClaimsSet.Builder()
-        .issuer(sha256Fingerprint(authKeyPair))
-        .subject(sha256Fingerprint(clientKeyPair))
+        .issuer(sha256FingerprintString(authKeyPair.getPublic()))
+        .subject(sha256FingerprintString(clientKeyPair.getPublic()))
         .expirationTime(Date.from(LocalDateTime.now().plusHours(1l).toInstant(ZoneOffset.UTC)))
         .issueTime(new Date())
         .claim("scope", new String[] {"testscope", "decrypt"})
