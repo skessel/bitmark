@@ -1,7 +1,5 @@
 package com.ppm.bitmark;
 
-import static com.ppm.bitmark.KeyIOUtils.readPrivateKey;
-import static com.ppm.bitmark.KeyIOUtils.readPublicKey;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -9,6 +7,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import org.springframework.stereotype.Component;
 import com.ppm.bitmark.KeypairConfiguration.KeyPairResources;
+import com.ppm.bitmark.crypto.Keys;
 
 @Component
 public class KeypairLoader {
@@ -31,8 +30,8 @@ public class KeypairLoader {
   }
   
   private KeyPair asKeyPair(KeyPairResources resource) throws IOException, GeneralSecurityException {
-    PrivateKey privateKey = readPrivateKey(resource.getPrivateKey().getInputStream());
-    PublicKey publicKey = readPublicKey(resource.getPublicKey().getInputStream());
+    PrivateKey privateKey = Keys.readPrivateKey(resource.getPrivateKey().getInputStream());
+    PublicKey publicKey = Keys.readPublicKey(resource.getPublicKey().getInputStream());
     return new KeyPair(publicKey, privateKey);
   }
   

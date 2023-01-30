@@ -1,7 +1,10 @@
 package com.ppm.bitmark;
 
+import static com.ppm.bitmark.crypto.Keys.readPublicKey;
+import static com.ppm.bitmark.crypto.Keys.writePublicKey;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
 import org.bouncycastle.crypto.CryptoException;
@@ -17,6 +20,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
+import com.ppm.bitmark.crypto.AESKey;
+import com.ppm.bitmark.crypto.Crypto;
 
 @Component
 public class ApiClient {
@@ -62,22 +67,22 @@ public class ApiClient {
   }
 
   public PublicKey publicKey(PublicKey publicKey) {
-    
+
     try {
       SignedJWT jwt = jwtProvider.get();
       logger.debug("Try PublicKey Endpoint with JWT {}", jwt.serialize());
-      
+
       RequestEntity<String> request = RequestEntity.post("/publickey")
           .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.serialize())
           .contentType(MediaType.TEXT_PLAIN)
-          .body(KeyIOUtils.writePublicKey(publicKey));
+          .body(writePublicKey(publicKey));
 
       ResponseEntity<String> response = restTemplate.exchange(request, String.class);
       logger.debug("PublicKey Endpoint success", response.getStatusCode().value());
       logger.warn("Status: '{}'", response.getStatusCode().value());
       logger.warn("Body: '\n{}'", response.getBody());
-      
-      return KeyIOUtils.readPublicKey(response.getBody());
+
+      return readPublicKey(response.getBody());
     } catch (HttpStatusCodeException e) {
       logger.warn("Hello Endpoint failed");
       logger.warn("Status: '{}'", e.getStatusCode().value());
@@ -86,12 +91,51 @@ public class ApiClient {
     } catch (JOSEException | CryptoException e) {
       logger.warn("JWT Generation failed", e);
       throw new RuntimeException(e);
-    }catch (IOException e) {
+    } catch (IOException e) {
       logger.warn("Write Public Key failed", e);
       throw new RuntimeException(e);
     } catch (GeneralSecurityException e) {
       logger.warn("Read Public Key failed", e);
       throw new RuntimeException(e);
     }
+  }
+
+  public byte[] decrypt(PrivateKey clientPrivateKey, AESKey key, byte[] data) {
+
+    try {
+      
+      String encryptValue = Crypto.encryptValue(key, data);
+      
+      SignedJWT jwt = jwtProvider.get();
+      logger.debug("Try decrypt Endpoint with JWT {}", jwt.serialize());
+
+      RequestEntity<String> request = RequestEntity.post("/decrypt")
+          .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.serialize())
+          .header("X-Encryption-Cipher-Key ", key.asBitmarkAesSecret())
+          .header("X-Encryption-Version ", "oaepgcm")
+          .header("X-Signature", Crypto.signature(clientPrivateKey, encryptValue))
+          .header("X-Signature-Version", "rs512")
+          .header("X-Encryption-Compression", "")
+          .header("X-Encryption-Content-Type", MediaType.TEXT_PLAIN_VALUE)
+          .body(encryptValue);
+
+      ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+      logger.debug("PublicKey Endpoint success", response.getStatusCode().value());
+      logger.warn("Status: '{}'", response.getStatusCode().value());
+      logger.warn("Body: '\n{}'", response.getBody());
+
+      return null;
+    } catch (HttpStatusCodeException e) {
+      logger.warn("Hello Endpoint failed");
+      logger.warn("Status: '{}'", e.getStatusCode().value());
+      logger.warn("Message: '{}'", e.getMessage());
+      throw new RuntimeException(e);
+    } catch (JOSEException | CryptoException e) {
+      logger.warn("JWT Generation failed", e);
+      throw new RuntimeException(e);
+    } catch (GeneralSecurityException e) {
+      logger.warn("Encrption failed", e);
+      throw new RuntimeException(e);
+    } 
   }
 }

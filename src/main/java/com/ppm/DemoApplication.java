@@ -1,5 +1,7 @@
 package com.ppm;
 
+import java.nio.charset.StandardCharsets;
+import java.security.PublicKey;
 import org.bouncycastle.crypto.CryptoException;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -12,9 +14,13 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 import com.nimbusds.jose.JOSEException;
 import com.ppm.bitmark.ApiClient;
 import com.ppm.bitmark.KeypairLoader;
+import com.ppm.bitmark.crypto.AESKey;
+import com.ppm.bitmark.crypto.Keys;
 
 @SpringBootApplication
 public class DemoApplication {
+  
+  private static String plainText = "This is a plain text which need to be encrypted by Java AES 256 GCM Encryption Algorithm";
 
   public static void main(String[] args) throws JOSEException, CryptoException {
     ConfigurableApplicationContext context = SpringApplication.run(DemoApplication.class, args);
@@ -23,7 +29,13 @@ public class DemoApplication {
       KeypairLoader keyPairs = context.getBean(KeypairLoader.class);
       ApiClient client = context.getBean(ApiClient.class);
       client.hello();
-      client.publicKey(keyPairs.getClientKeyPair().getPublic());
+      
+      PublicKey publicServerKey = client.publicKey(keyPairs.getClientKeyPair().getPublic());
+      AESKey aesKey = Keys.newAESKey(publicServerKey);
+      
+      client.decrypt(keyPairs.getClientKeyPair().getPrivate(), aesKey, plainText.getBytes(StandardCharsets.UTF_8));
+      
+      
     } catch (Exception e) {
       LoggerFactory.getLogger(DemoApplication.class).error("", e);
     }

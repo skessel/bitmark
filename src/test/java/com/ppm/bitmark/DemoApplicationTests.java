@@ -1,4 +1,4 @@
-package ccom.ppm.bitmark.demo;
+package com.ppm.bitmark;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
