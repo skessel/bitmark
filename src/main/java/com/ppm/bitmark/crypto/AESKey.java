@@ -1,13 +1,13 @@
 package com.ppm.bitmark.crypto;
 
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public interface AESKey {
   
   SecretKeySpec getSecretKey();
   
-  IvParameterSpec getIvParameter();
+  GCMParameterSpec getIvParameter();
 
   /**
    * @return a Base64 encoded {@link String} representation of this {@link AESKey}
@@ -17,10 +17,10 @@ public interface AESKey {
   static final class AESKeyImpl implements AESKey {
 
     private final SecretKeySpec key;
-    private final IvParameterSpec iv;
+    private final GCMParameterSpec iv;
     private final String bitmarkAesSecret;
 
-    AESKeyImpl(SecretKeySpec key, IvParameterSpec iv, String bitmarkKey)  {
+    AESKeyImpl(SecretKeySpec key, GCMParameterSpec iv, String bitmarkKey)  {
       this.key = key;
       this.iv = iv;
       this.bitmarkAesSecret = bitmarkKey;
@@ -32,7 +32,7 @@ public interface AESKey {
     }
     
     @Override
-    public IvParameterSpec getIvParameter() {
+    public GCMParameterSpec getIvParameter() {
       return iv;
     }
     

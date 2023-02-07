@@ -104,29 +104,32 @@ public class ApiClient {
 
     try {
       
-      String encryptValue = Crypto.encryptValue(key, data);
+      byte[] encryptValue = Crypto.encryptValue(key, data);
       
       SignedJWT jwt = jwtProvider.get();
       logger.debug("Try decrypt Endpoint with JWT {}", jwt.serialize());
+      logger.debug("X-Encryption-Cipher-Key {}", key.asBitmarkAesSecret());
+      logger.debug("X-Signature {}", Crypto.signature(clientPrivateKey, encryptValue));
 
-      RequestEntity<String> request = RequestEntity.post("/decrypt")
+      RequestEntity<byte[]> request = RequestEntity.post("/decrypt")
           .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.serialize())
-          .header("X-Encryption-Cipher-Key ", key.asBitmarkAesSecret())
-          .header("X-Encryption-Version ", "oaepgcm")
-          .header("X-Signature", Crypto.signature(clientPrivateKey, encryptValue))
+          .header("X-Encryption-Cipher-Key", key.asBitmarkAesSecret())
+          .header("X-Encryption-Version", "oaepgcm")
+          .header("X-Signature", Crypto.signature(clientPrivateKey, data))
           .header("X-Signature-Version", "rs512")
           .header("X-Encryption-Compression", "")
           .header("X-Encryption-Content-Type", MediaType.TEXT_PLAIN_VALUE)
           .body(encryptValue);
 
-      ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-      logger.debug("PublicKey Endpoint success", response.getStatusCode().value());
+      ResponseEntity<byte[]> response = restTemplate.exchange(request, byte[].class);
+      logger.debug("Decrypt Endpoint success", response.getStatusCode().value());
       logger.warn("Status: '{}'", response.getStatusCode().value());
-      logger.warn("Body: '\n{}'", response.getBody());
+      logger.warn("Body: '\n{}'", Crypto.decryptValue(key, response.getBody()));
 
+      
       return null;
     } catch (HttpStatusCodeException e) {
-      logger.warn("Hello Endpoint failed");
+      logger.warn("Decrypt Endpoint failed");
       logger.warn("Status: '{}'", e.getStatusCode().value());
       logger.warn("Message: '{}'", e.getMessage());
       throw new RuntimeException(e);

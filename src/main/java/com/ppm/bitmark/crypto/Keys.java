@@ -15,10 +15,13 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Random;
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource.PSpecified;
 import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.openssl.PEMParser;
@@ -77,7 +80,7 @@ public class Keys {
     } 
   }
   
-  public static AESKey newAESKey(PublicKey pubicServerKey) throws GeneralSecurityException , IOException  {
+  public static AESKey newAESKey(PublicKey publicServerKey) throws GeneralSecurityException , IOException  {
     
     registerBouncyCastleProvider();
     
@@ -85,15 +88,18 @@ public class Keys {
     byte[] keyBytes = createRandomByteArray(32);
     
     SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, "AES");
-    IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
+    GCMParameterSpec ivSpec = new GCMParameterSpec(ivBytes.length * 8, ivBytes);
     
     var base64EncodedIV = encodeBase64(ivBytes);
     var base64EncodedKey = encodeBase64(keyBytes);
     var jsonStructur = new JsonStructur(base64EncodedIV, base64EncodedKey);
     var jsonStructurJson = new ObjectMapper().writeValueAsString(jsonStructur);
     
-    Cipher cipher = Cipher.getInstance("RSA");
-    cipher.init(Cipher.ENCRYPT_MODE, pubicServerKey);
+    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
+    cipher.init(
+        Cipher.ENCRYPT_MODE, 
+        publicServerKey, 
+        new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-1"), PSpecified.DEFAULT));
 
     byte[] bytesToEncrypt = jsonStructurJson.getBytes();
     byte[] encryptionResult = cipher.doFinal(bytesToEncrypt);
