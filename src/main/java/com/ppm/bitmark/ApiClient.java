@@ -22,6 +22,7 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import com.ppm.bitmark.crypto.AESKey;
 import com.ppm.bitmark.crypto.Crypto;
+import com.ppm.bitmark.crypto.Keys;
 
 @Component
 public class ApiClient {
@@ -124,7 +125,15 @@ public class ApiClient {
       ResponseEntity<byte[]> response = restTemplate.exchange(request, byte[].class);
       logger.debug("Decrypt Endpoint success", response.getStatusCode().value());
       logger.warn("Status: '{}'", response.getStatusCode().value());
-      logger.warn("Body: '\n{}'", Crypto.decryptValue(key, response.getBody()));
+      logger.debug("X-Encryption-Cipher-Key {}", response.getHeaders().getFirst("X-Encryption-Cipher-Key"));
+      logger.debug("X-Signature {}", response.getHeaders().getFirst("X-Signature"));
+      
+      Crypto.decryptValue(key, encryptValue);
+      
+      Keys.readAESKey(
+          clientPrivateKey, 
+          response.getHeaders().getFirst("X-Encryption-Cipher-Key"),
+          response.getHeaders().getFirst("X-Signature"));
 
       
       return null;
@@ -138,6 +147,9 @@ public class ApiClient {
       throw new RuntimeException(e);
     } catch (GeneralSecurityException e) {
       logger.warn("Encrption failed", e);
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      logger.warn("Read AES Key failed", e);
       throw new RuntimeException(e);
     } 
   }

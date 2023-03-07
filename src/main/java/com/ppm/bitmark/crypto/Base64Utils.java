@@ -9,6 +9,10 @@ class Base64Utils {
   static byte[] decodeBase64(String data) {
     return Base64.getDecoder().decode(data);
   }
+  
+  static byte[] decodeBase64Url(String data) {
+    return Base64.getUrlEncoder().encode(data.getBytes());
+  }
 
   static String encodeBase64(byte[] bytes) {
     return Base64.getEncoder().encodeToString(bytes);

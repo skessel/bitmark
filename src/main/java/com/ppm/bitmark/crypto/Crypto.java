@@ -38,11 +38,11 @@ public class Crypto {
     return bytes;
   }
   
-  public static String signature(PrivateKey privateKey, byte[] encryptedData) throws GeneralSecurityException {
+  public static String signature(PrivateKey privateKey, byte[] rawData) throws GeneralSecurityException {
     
     Signature privateSignature = Signature.getInstance("SHA512withRSA");
     privateSignature.initSign(privateKey);
-    privateSignature.update(encryptedData);
+    privateSignature.update(rawData);
 
     byte[] signature = privateSignature.sign();
 

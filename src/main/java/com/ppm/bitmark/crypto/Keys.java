@@ -1,6 +1,8 @@
 package com.ppm.bitmark.crypto;
 
 import static com.nimbusds.jose.util.IOUtils.readInputStreamToString;
+import static com.ppm.bitmark.crypto.Base64Utils.decodeBase64;
+import static com.ppm.bitmark.crypto.Base64Utils.decodeBase64Url;
 import static com.ppm.bitmark.crypto.Base64Utils.encodeBase64;
 import static java.util.Objects.nonNull;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ppm.bitmark.crypto.AESKey.AESKeyImpl;
@@ -107,6 +110,51 @@ public class Keys {
     return new AESKeyImpl(skeySpec, ivSpec, encodedEncryptionResult);
   }
   
+  public static AESKey readAESKey(PrivateKey privateKey, String xEncryptedCipherKey, String signature) throws GeneralSecurityException , IOException  {
+    
+    registerBouncyCastleProvider();
+    
+    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
+    cipher.init(
+        Cipher.DECRYPT_MODE, 
+        privateKey, 
+        new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-1"), PSpecified.DEFAULT));
+    
+    byte[] encryptedKeyData = decodeBase64Url(xEncryptedCipherKey);
+    byte[] encryptedKeyData2 = decodeBase64(xEncryptedCipherKey);
+    
+    new String(encryptedKeyData, StandardCharsets.UTF_8);
+    
+    byte[] decryptedKeyData = cipher.doFinal(encryptedKeyData);
+    
+    JsonStructur jsonStructur = new ObjectMapper().readValue(decryptedKeyData, JsonStructur.class);
+    
+    
+//    byte[] ivBytes = createRandomByteArray(16);
+//    byte[] keyBytes = createRandomByteArray(32);
+    
+//    SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, "AES");
+//    GCMParameterSpec ivSpec = new GCMParameterSpec(ivBytes.length * 8, ivBytes);
+//    
+//    var base64EncodedIV = encodeBase64(ivBytes);
+//    var base64EncodedKey = encodeBase64(keyBytes);
+//    var jsonStructur = new JsonStructur(base64EncodedIV, base64EncodedKey);
+//    var jsonStructurJson = new ObjectMapper().writeValueAsString(jsonStructur);
+//    
+//    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
+//    cipher.init(
+//        Cipher.ENCRYPT_MODE, 
+//        privateKey, 
+//        new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-1"), PSpecified.DEFAULT));
+//
+//    byte[] bytesToEncrypt = jsonStructurJson.getBytes();
+//    
+//    String encodedEncryptionResult = encodeBase64(encryptionResult);
+//    return new AESKeyImpl(skeySpec, ivSpec, encodedEncryptionResult);
+    
+    return null;
+  }
+  
   static void registerBouncyCastleProvider() {
     Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
   }
@@ -118,7 +166,7 @@ public class Keys {
     return bytes;
   }
   
-  private final static class JsonStructur {
+  final static class JsonStructur {
 
     @JsonProperty
     private final String base64EncodedKey;
@@ -126,13 +174,11 @@ public class Keys {
     @JsonProperty
     private final String base64EncodedIV;
 
-    private JsonStructur(String base64EncodedIV, String base64EncodedKey) {
+    @JsonCreator
+    JsonStructur(String base64EncodedIV, String base64EncodedKey) {
       this.base64EncodedKey = base64EncodedKey;
       this.base64EncodedIV = base64EncodedIV;
     }
-    
-    
-    
   }
 
 }
