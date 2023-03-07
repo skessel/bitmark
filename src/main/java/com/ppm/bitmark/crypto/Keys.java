@@ -121,7 +121,7 @@ public class Keys {
         new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-1"), PSpecified.DEFAULT));
     
     byte[] encryptedKeyData = decodeBase64Url(xEncryptedCipherKey);
-    byte[] encryptedKeyData2 = decodeBase64(xEncryptedCipherKey);
+//    byte[] encryptedKeyData2 = decodeBase64(xEncryptedCipherKey);
     
     new String(encryptedKeyData, StandardCharsets.UTF_8);
     
