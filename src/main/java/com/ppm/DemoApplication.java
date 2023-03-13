@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import com.nimbusds.jose.JOSEException;
@@ -33,9 +34,17 @@ public class DemoApplication {
       PublicKey publicServerKey = client.publicKey(keyPairs.getClientKeyPair().getPublic());
       AESKey aesKey = Keys.newAESKey(publicServerKey);
       
-      client.decrypt(keyPairs.getClientKeyPair().getPrivate(), aesKey, plainText.getBytes(StandardCharsets.UTF_8));
+      byte[] decrypt = client.decrypt(
+          keyPairs.getClientKeyPair().getPrivate(), 
+          aesKey, 
+          plainText.getBytes(StandardCharsets.UTF_8),
+          publicServerKey);
       
+      String responseText = new String(decrypt, StandardCharsets.UTF_8);
       
+      if (!responseText.equals(plainText)) {
+        throw new RuntimeException("Processing not working");
+      }
     } catch (Exception e) {
       LoggerFactory.getLogger(DemoApplication.class).error("", e);
     }
@@ -44,6 +53,7 @@ public class DemoApplication {
   @Bean
   public RestTemplate restTemplate(RestTemplateBuilder builder) {
     return builder
+        .requestFactory(HttpComponentsClientHttpRequestFactory.class)
         .uriTemplateHandler(new DefaultUriBuilderFactory("https://wsip-test.bitmarck-daten.de"))
         .build();
   }

@@ -2,12 +2,14 @@ package com.ppm.bitmark;
 
 import static com.ppm.bitmark.crypto.Keys.readPublicKey;
 import static com.ppm.bitmark.crypto.Keys.writePublicKey;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.compress.utils.IOUtils;
 import org.bouncycastle.crypto.CryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
@@ -102,7 +104,7 @@ public class ApiClient {
     }
   }
 
-  public byte[] decrypt(PrivateKey clientPrivateKey, AESKey key, byte[] data) {
+  public byte[] decrypt(PrivateKey clientPrivateKey, AESKey key, byte[] data, PublicKey publicServerKey) {
 
     try {
       
@@ -111,13 +113,13 @@ public class ApiClient {
       SignedJWT jwt = jwtProvider.get();
       logger.debug("Try decrypt Endpoint with JWT {}", jwt.serialize());
       logger.debug("X-Encryption-Cipher-Key {}", key.asBitmarkAesSecret());
-      logger.debug("X-Signature {}", Crypto.signature(clientPrivateKey, encryptValue));
+      logger.debug("X-Signature {}", Crypto.createSignatur(clientPrivateKey, encryptValue));
 
       RequestEntity<byte[]> request = RequestEntity.post("/decrypt")
           .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.serialize())
           .header("X-Encryption-Cipher-Key", key.asBitmarkAesSecret())
           .header("X-Encryption-Version", "oaepgcm")
-          .header("X-Signature", Crypto.signature(clientPrivateKey, data))
+          .header("X-Signature", Crypto.createSignatur(clientPrivateKey, data))
           .header("X-Signature-Version", "rs512")
           .header("X-Encryption-Compression", "")
           .header("X-Encryption-Content-Type", MediaType.TEXT_PLAIN_VALUE)
@@ -129,21 +131,25 @@ public class ApiClient {
       logger.debug("X-Encryption-Cipher-Key {}", response.getHeaders().getFirst("X-Encryption-Cipher-Key"));
       logger.debug("X-Signature {}", response.getHeaders().getFirst("X-Signature"));
       
-//      Crypto.decryptValue(key, encryptValue);
-      
       AESKey aesKey = Keys.readAESKey(
           clientPrivateKey, 
-          response.getHeaders().getFirst("X-Encryption-Cipher-Key"),
-          response.getHeaders().getFirst("X-Signature"));
-      
+          response.getHeaders().getFirst("X-Encryption-Cipher-Key"));
+
       byte[] decryptValue = Crypto.decryptValue(aesKey, response.getBody());
       
-      // TODO gzip
+      if (response.getHeaders().containsKey("x-encryption-compression")) {
+        String compression = response.getHeaders().getFirst("x-encryption-compression");
+        if (compression.equalsIgnoreCase("gzip")) {
+          decryptValue = decompressGZIP(decryptValue);
+        } else {
+          throw new RuntimeException("Unsupportetd compression used " + compression);
+        }
+      }
       
-      new String(decryptValue, StandardCharsets.UTF_8);
-
-      
-      return null;
+      if (!Crypto.verifySignatur(publicServerKey, response.getBody(), response.getHeaders().getFirst("X-Signature"))) {
+//        throw new RuntimeException("Signature verification failed");
+      }
+      return decryptValue;
     } catch (HttpStatusCodeException e) {
       logger.warn("Decrypt Endpoint failed");
       logger.warn("Status: '{}'", e.getStatusCode().value());
@@ -153,11 +159,17 @@ public class ApiClient {
       logger.warn("JWT Generation failed", e);
       throw new RuntimeException(e);
     } catch (GeneralSecurityException e) {
-      logger.warn("Encrption failed", e);
+      logger.warn("Encryption failed", e);
       throw new RuntimeException(e);
     } catch (IOException e) {
       logger.warn("Read AES Key failed", e);
       throw new RuntimeException(e);
     } 
   }
+  
+  private static byte[] decompressGZIP(byte[] data) throws IOException {
+    try (GzipCompressorInputStream in = new GzipCompressorInputStream(new ByteArrayInputStream(data))){
+        return IOUtils.toByteArray(in);
+    }
+}
 }

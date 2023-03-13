@@ -110,7 +110,7 @@ public class Keys {
     return new AESKeyImpl(skeySpec, ivSpec, encodedEncryptionResult);
   }
   
-  public static AESKey readAESKey(PrivateKey privateKey, String xEncryptedCipherKey, String signature) throws GeneralSecurityException , IOException  {
+  public static AESKey readAESKey(PrivateKey privateKey, String xEncryptedCipherKey) throws GeneralSecurityException , IOException  {
     
     registerBouncyCastleProvider();
     

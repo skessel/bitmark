@@ -16,7 +16,6 @@ public class KeypairLoader {
   private final KeyPair clientKeyPair;
   
   public KeypairLoader(KeypairConfiguration configuration) throws IOException, GeneralSecurityException {
-   
     this.authKeyPair = asKeyPair(configuration.getAuthKey());
     this.clientKeyPair = asKeyPair(configuration.getClientKey());
   }

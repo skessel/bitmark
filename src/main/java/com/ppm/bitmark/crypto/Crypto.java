@@ -3,6 +3,7 @@ package com.ppm.bitmark.crypto;
 import static com.ppm.bitmark.crypto.Base64Utils.encodeBase64;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
 import javax.crypto.Cipher;
@@ -38,7 +39,7 @@ public class Crypto {
     return bytes;
   }
   
-  public static String signature(PrivateKey privateKey, byte[] rawData) throws GeneralSecurityException {
+  public static String createSignatur(PrivateKey privateKey, byte[] rawData) throws GeneralSecurityException {
     
     Signature privateSignature = Signature.getInstance("SHA512withRSA");
     privateSignature.initSign(privateKey);
@@ -47,6 +48,18 @@ public class Crypto {
     byte[] signature = privateSignature.sign();
 
     return encodeBase64(signature);
+  }
+  
+  public static boolean verifySignatur(PublicKey publicKey, byte[] rawData, String signature) throws GeneralSecurityException {
+    
+    byte[] decodedSignature = Base64Utils.decodeBase64Url(signature);
+    
+    Signature privateSignature = Signature.getInstance("SHA512withRSA");
+    privateSignature.initVerify(publicKey);
+    privateSignature.update(rawData);
+    boolean verify = privateSignature.verify(decodedSignature);
+    
+    return verify;
   }
   
   static void registerBouncyCastleProvider() {
