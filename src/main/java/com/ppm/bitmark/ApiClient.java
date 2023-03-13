@@ -128,7 +128,7 @@ public class ApiClient {
       logger.debug("X-Encryption-Cipher-Key {}", response.getHeaders().getFirst("X-Encryption-Cipher-Key"));
       logger.debug("X-Signature {}", response.getHeaders().getFirst("X-Signature"));
       
-      Crypto.decryptValue(key, encryptValue);
+//      Crypto.decryptValue(key, encryptValue);
       
       Keys.readAESKey(
           clientPrivateKey, 

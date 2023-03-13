@@ -11,7 +11,7 @@ class Base64Utils {
   }
   
   static byte[] decodeBase64Url(String data) {
-    return Base64.getUrlEncoder().encode(data.getBytes());
+    return Base64.getUrlDecoder().decode(data.getBytes());
   }
 
   static String encodeBase64(byte[] bytes) {

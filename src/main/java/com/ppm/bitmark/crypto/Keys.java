@@ -1,7 +1,6 @@
 package com.ppm.bitmark.crypto;
 
 import static com.nimbusds.jose.util.IOUtils.readInputStreamToString;
-import static com.ppm.bitmark.crypto.Base64Utils.decodeBase64;
 import static com.ppm.bitmark.crypto.Base64Utils.decodeBase64Url;
 import static com.ppm.bitmark.crypto.Base64Utils.encodeBase64;
 import static java.util.Objects.nonNull;
@@ -121,13 +120,10 @@ public class Keys {
         new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-1"), PSpecified.DEFAULT));
     
     byte[] encryptedKeyData = decodeBase64Url(xEncryptedCipherKey);
-//    byte[] encryptedKeyData2 = decodeBase64(xEncryptedCipherKey);
-    
-    new String(encryptedKeyData, StandardCharsets.UTF_8);
-    
     byte[] decryptedKeyData = cipher.doFinal(encryptedKeyData);
     
-    JsonStructur jsonStructur = new ObjectMapper().readValue(decryptedKeyData, JsonStructur.class);
+    String jsonStructurJson = new String(decryptedKeyData, StandardCharsets.UTF_8);
+    JsonStructur jsonStructur = new ObjectMapper().readValue(jsonStructurJson, JsonStructur.class);
     
     
 //    byte[] ivBytes = createRandomByteArray(16);
@@ -168,17 +164,16 @@ public class Keys {
   
   final static class JsonStructur {
 
-    @JsonProperty
+    @JsonProperty("base64EncodedKey")
     private final String base64EncodedKey;
     
-    @JsonProperty
+    @JsonProperty("base64EncodedIV")
     private final String base64EncodedIV;
 
     @JsonCreator
-    JsonStructur(String base64EncodedIV, String base64EncodedKey) {
+    JsonStructur(@JsonProperty("base64EncodedIV") String base64EncodedIV, @JsonProperty("base64EncodedKey") String base64EncodedKey) {
       this.base64EncodedKey = base64EncodedKey;
       this.base64EncodedIV = base64EncodedIV;
     }
   }
-
 }
