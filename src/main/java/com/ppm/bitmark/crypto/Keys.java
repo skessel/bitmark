@@ -1,6 +1,7 @@
 package com.ppm.bitmark.crypto;
 
 import static com.nimbusds.jose.util.IOUtils.readInputStreamToString;
+import static com.ppm.bitmark.crypto.Base64Utils.decodeBase64;
 import static com.ppm.bitmark.crypto.Base64Utils.decodeBase64Url;
 import static com.ppm.bitmark.crypto.Base64Utils.encodeBase64;
 import static java.util.Objects.nonNull;
@@ -125,30 +126,13 @@ public class Keys {
     String jsonStructurJson = new String(decryptedKeyData, StandardCharsets.UTF_8);
     JsonStructur jsonStructur = new ObjectMapper().readValue(jsonStructurJson, JsonStructur.class);
     
+    byte[] iv = decodeBase64(jsonStructur.base64EncodedIV);
+    byte[] aes = decodeBase64(jsonStructur.base64EncodedKey);
     
-//    byte[] ivBytes = createRandomByteArray(16);
-//    byte[] keyBytes = createRandomByteArray(32);
+    SecretKeySpec skeySpec = new SecretKeySpec(aes, "AES");
+    GCMParameterSpec ivSpec = new GCMParameterSpec(iv.length * 8, iv);
     
-//    SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, "AES");
-//    GCMParameterSpec ivSpec = new GCMParameterSpec(ivBytes.length * 8, ivBytes);
-//    
-//    var base64EncodedIV = encodeBase64(ivBytes);
-//    var base64EncodedKey = encodeBase64(keyBytes);
-//    var jsonStructur = new JsonStructur(base64EncodedIV, base64EncodedKey);
-//    var jsonStructurJson = new ObjectMapper().writeValueAsString(jsonStructur);
-//    
-//    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
-//    cipher.init(
-//        Cipher.ENCRYPT_MODE, 
-//        privateKey, 
-//        new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-1"), PSpecified.DEFAULT));
-//
-//    byte[] bytesToEncrypt = jsonStructurJson.getBytes();
-//    
-//    String encodedEncryptionResult = encodeBase64(encryptionResult);
-//    return new AESKeyImpl(skeySpec, ivSpec, encodedEncryptionResult);
-    
-    return null;
+    return new AESKeyImpl(skeySpec, ivSpec, encodeBase64(jsonStructurJson.getBytes(StandardCharsets.UTF_8)));
   }
   
   static void registerBouncyCastleProvider() {

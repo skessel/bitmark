@@ -3,6 +3,7 @@ package com.ppm.bitmark;
 import static com.ppm.bitmark.crypto.Keys.readPublicKey;
 import static com.ppm.bitmark.crypto.Keys.writePublicKey;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -130,10 +131,16 @@ public class ApiClient {
       
 //      Crypto.decryptValue(key, encryptValue);
       
-      Keys.readAESKey(
+      AESKey aesKey = Keys.readAESKey(
           clientPrivateKey, 
           response.getHeaders().getFirst("X-Encryption-Cipher-Key"),
           response.getHeaders().getFirst("X-Signature"));
+      
+      byte[] decryptValue = Crypto.decryptValue(aesKey, response.getBody());
+      
+      // TODO gzip
+      
+      new String(decryptValue, StandardCharsets.UTF_8);
 
       
       return null;
